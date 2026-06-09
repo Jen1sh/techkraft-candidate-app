@@ -41,3 +41,5 @@ No tests exist yet. No test framework is configured. `httpx` is available if usi
 - Use `source backend/.venv/bin/activate` before running any Python commands.
 - No linting, formatting, or type-checking config exists yet.
 - The repo is at an early stage — add config files (pyproject.toml, etc.) as the project grows.
+
+See `backend/.agents/rules/convention.md` for the FastAPI production standards and style guide (architecture, config management, layer separation, DI, service layer, async handling, error handling, testing strategy).
