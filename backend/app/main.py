@@ -9,8 +9,9 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.routers.auth import router as auth_router
+from app.api.routers.candidates import router as candidate_router
 from app.db.base import Base
-from app.db.seed import seed_users
+from app.db.seed import seed_candidates, seed_users
 from app.db.session import async_session, engine, get_db
 
 
@@ -20,6 +21,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await conn.run_sync(Base.metadata.create_all)
     async with async_session() as db:
         await seed_users(db)
+        await seed_candidates(db)
     yield
 
 
@@ -69,6 +71,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 
 app.include_router(auth_router)
+app.include_router(candidate_router)
 
 
 @app.get("/health")
