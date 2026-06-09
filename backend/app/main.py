@@ -26,12 +26,38 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 app = FastAPI(title="TechCraft Candidate Score API", lifespan=lifespan)
 
 
+def _human_readable_error(field: str, err: dict) -> str:
+    label = field.replace("_", " ").title()
+
+    if err["type"] == "missing":
+        return f"{label} is required"
+
+    ctx = err.get("ctx", {})
+
+    if err["type"] == "string_too_short":
+        min_len = ctx.get("min_length")
+        if min_len:
+            return f"{label} must be at least {min_len} character{'s' if min_len > 1 else ''}"
+        return f"{label} is too short"
+
+    if err["type"] == "string_too_long":
+        max_len = ctx.get("max_length")
+        if max_len:
+            return f"{label} must be at most {max_len} characters"
+        return f"{label} is too long"
+
+    if err["type"] == "value_error" and "reason" in ctx:
+        return f"{label} is invalid"
+
+    return err["msg"].capitalize()
+
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     errors: dict[str, str] = {}
     for err in exc.errors():
         field = ".".join(str(loc) for loc in err["loc"] if loc not in ("body", "query", "path", "header"))
-        errors[field] = err["msg"]
+        errors[field] = _human_readable_error(field, err)
     return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, content={"errors": errors})
 
 
