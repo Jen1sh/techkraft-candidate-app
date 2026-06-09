@@ -1,45 +1,70 @@
 # TechCraft Candidate Score — Agent Guide
 
-## Setup
+Monorepo: `backend/` (Python 3.12 + FastAPI) + `frontend/` (React + Vite + Tailwind v4 + daisyUI v5).
 
-- **Python**: 3.12. Virtual environment at `backend/.venv/`.
-- **Activate**: `source backend/.venv/bin/activate` (or run commands with `backend/.venv/bin/` prefix).
-- **No pyproject.toml, no requirements.txt.** Add new deps with `pip install <pkg>` and consider freezing: `pip freeze > backend/requirements.txt`.
-- **Zed** expects Python path in `.zed/settings.json` pointing to `.venv/bin/python`. Already configured — open Command Palette (`Cmd+Shift+P`) → "python: select interpreter" to verify `.venv/bin/python` is selected.
+## Backend
 
-## Run
+- **Python venv:** `backend/.venv/` — activate with `source backend/.venv/bin/activate`.
+- **No pyproject.toml or requirements.txt.** Install deps with `pip install <pkg>`.
+- **Run:** `uvicorn app.main:app --reload --port 8000` from `backend/`.
+- **Port:** 8000. All endpoints under `/api/`.
 
-```sh
-source backend/.venv/bin/activate
-uvicorn app.main:app --reload --port 8000
-```
+### Architecture
 
-Run from `backend/` directory. `--reload` is available (watchfiles installed).
+`backend/app/` — async SQLAlchemy + SQLite (`techcraft.db` auto-created, auto-seeded on startup).
+| Layer | Path |
+|---|---|
+| Entrypoint | `main.py` — lifespan creates tables + seeds |
+| API routers | `api/routers/auth.py`, `api/routers/candidates.py` |
+| Dependencies | `api/deps.py` — `get_db`, `get_current_user`, `require_role` |
+| Config | `core/config.py` — `Settings` via `pydantic-settings` (reads `.env`) |
+| Security | `core/security.py` — bcrypt hashing (`passlib`), JWT (`python-jose`) |
+| DB models | `db/models/user.py`, `candidate.py`, `score.py` |
+| Schemas | `schemas/auth.py`, `candidate.py` — Pydantic request/response DTOs |
+| Services | `services/auth_service.py`, `candidate_service.py` — stateless classes |
+| Seed data | `db/seed.py` — users, candidates, scores |
 
-## Project structure
+### Auth
 
-See `backend/.agents/rules/project-structure.md` for the target modular architecture (services, schemas, api routers, core config, db layer).
+- `POST /api/auth/register` — creates reviewer, returns user
+- `POST /api/auth/login` — returns `{access_token, token_type, user}`
+- Protected endpoints use `Authorization: Bearer <token>`
+- Roles: `admin`, `reviewer` — `require_role(Role.ADMIN)` in `deps.py`
 
-Current state is minimal — only `app/main.py` with `GET /health` exists. Migrate toward the reference structure as features are added.
+**Seed users (auto-created):**
+| Email | Password | Role |
+|---|---|---|
+| admin@techcraft.com | password123 | admin |
+| reviewer@techcraft.com | password123 | reviewer |
 
-## Dependencies (key)
+### Key deps (not obvious)
 
-- `fastapi==0.136.3`, `uvicorn==0.49.0`, `starlette==1.2.1`
-- `pydantic`, `pydantic-settings` (available for config/schemas)
-- `httpx` (async HTTP client, likely for tests or outbound calls)
-- `sentry-sdk` (error tracking)
-- `python-dotenv`, `python-multipart`
-- `email-validator`
+`python-jose[cryptography]`, `passlib[bcrypt]`, `aiosqlite`, `watchfiles` (for `--reload`).
 
-## Testing
+### `.agents` reference files
 
-No tests exist yet. No test framework is configured. `httpx` is available if using FastAPI's `TestClient`.
+`backend/.agents/rules/` contains reference FastAPI architecture and coding convention guides (aspirational — may not match actual code). Load with `skill` tool.
 
-## Conventions
+## Frontend
 
-- App name: `"TechCraft Candidate Score API"`.
-- Use `source backend/.venv/bin/activate` before running any Python commands.
-- No linting, formatting, or type-checking config exists yet.
-- The repo is at an early stage — add config files (pyproject.toml, etc.) as the project grows.
+- `npm run dev` — Vite dev server
+- `npm run build` — `tsc -b && vite build` (typecheck **required** before build)
+- `npm run lint` — ESLint v10
+- TypeScript ~6.0 — `erasableSyntaxOnly` is on (**no enums, no parameter properties**)
+- `verbatimModuleSyntax` — use `import type` for type-only imports
+- `noUnusedLocals`/`noUnusedParameters` — dead code is an error
 
-See `backend/.agents/rules/convention.md` for the FastAPI production standards and style guide (architecture, config management, layer separation, DI, service layer, async handling, error handling, testing strategy).
+### Tailwind v4 + daisyUI v5
+
+- Tailwind is a Vite plugin (`@tailwindcss/vite`), **no** `tailwind.config.js`
+- Add `@import "tailwindcss"` at top of your CSS entry file
+- daisyUI 5 is a Tailwind plugin added in CSS: `@plugin "daisyui"` after the import
+- daisyUI skill preloaded at `frontend/.agents/skills/daisyui/` — load it with `skill` tool when writing UI
+
+### `.agents` reference files
+
+`frontend/.agents/rules/` contains reference React + Vite project structure and convention guides. The daisyUI skill at `frontend/.agents/skills/daisyui/` includes install, usage, config, colors, and 60 component docs — load it with the `skill` tool.
+
+## No CI, no Docker, no tests yet
+
+No CI workflows, Dockerfiles, or test framework configured. `httpx` is available for FastAPI `TestClient`.
