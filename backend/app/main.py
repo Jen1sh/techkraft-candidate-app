@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.routers.auth import router as auth_router
 from app.api.routers.candidates import router as candidate_router
 from app.db.base import Base
-from app.db.seed import seed_candidates, seed_users
+from app.db.seed import seed_candidates, seed_scores, seed_users
 from app.db.session import async_session, engine, get_db
 
 
@@ -22,6 +22,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     async with async_session() as db:
         await seed_users(db)
         await seed_candidates(db)
+        await seed_scores(db)
     yield
 
 
