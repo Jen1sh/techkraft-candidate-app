@@ -28,7 +28,7 @@ class CandidateService:
         skill: str | None = None,
         keyword: str | None = None,
     ) -> tuple[list[Candidate], int]:
-        stmt = select(Candidate)
+        stmt = select(Candidate).where(Candidate.deleted_at.is_(None))
 
         if status:
             stmt = stmt.where(Candidate.status == status)
@@ -53,7 +53,9 @@ class CandidateService:
 
     @staticmethod
     async def get_by_id(db: AsyncSession, candidate_id: int) -> Candidate | None:
-        result = await db.execute(select(Candidate).where(Candidate.id == candidate_id))
+        result = await db.execute(
+            select(Candidate).where(Candidate.id == candidate_id, Candidate.deleted_at.is_(None))
+        )
         return result.scalar_one_or_none()
 
     @staticmethod
@@ -105,6 +107,36 @@ class CandidateService:
         return scores
 
     @staticmethod
+    async def create(db: AsyncSession, data: dict) -> Candidate:
+        existing = await db.execute(
+            select(Candidate).where(Candidate.email == data["email"])
+        )
+        if existing.scalar_one_or_none():
+            raise ValueError("A candidate with this email already exists")
+        candidate = Candidate(
+            name=data["name"],
+            email=data["email"],
+            role_applied=data["role_applied"],
+            status=CandidateStatus.NEW,
+            skills=data.get("skills", []),
+            internal_notes=data.get("internal_notes"),
+        )
+        db.add(candidate)
+        await db.commit()
+        await db.refresh(candidate)
+        return candidate
+
+    @staticmethod
+    async def soft_delete(db: AsyncSession, candidate_id: int) -> Candidate:
+        candidate = await CandidateService.get_by_id(db, candidate_id)
+        if candidate is None:
+            raise ValueError("Candidate not found")
+        candidate.deleted_at = datetime.now(timezone.utc)
+        await db.commit()
+        await db.refresh(candidate)
+        return candidate
+
+    @staticmethod
     async def update(
         db: AsyncSession,
         candidate_id: int,
@@ -125,7 +157,9 @@ class CandidateService:
     @staticmethod
     async def get_summary(db: AsyncSession) -> dict:
         result = await db.execute(
-            select(Candidate.status, func.count()).group_by(Candidate.status)
+            select(Candidate.status, func.count())
+            .where(Candidate.deleted_at.is_(None))
+            .group_by(Candidate.status)
         )
         counts = {row[0]: row[1] for row in result.all()}
         return {

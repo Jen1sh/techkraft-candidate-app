@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db, require_role
 from app.db.models.user import Role, User
-from app.schemas.candidate import AddScoresRequest, CandidateAdminResponse, CandidateDetailAdminResponse, CandidateDetailResponse, CandidateResponse, CandidateReviewsResponse, CandidatesSummaryResponse, CategoryScore, MyScoreResponse, PaginatedCandidatesResponse, PaginationMeta, SummaryResponse, UpdateCandidateRequest
+from app.schemas.candidate import AddScoresRequest, CandidateAdminResponse, CandidateDetailAdminResponse, CandidateDetailResponse, CandidateResponse, CandidateReviewsResponse, CandidatesSummaryResponse, CategoryScore, CreateCandidateRequest, MyScoreResponse, PaginatedCandidatesResponse, PaginationMeta, SummaryResponse, UpdateCandidateRequest
 from app.services.candidate_service import CandidateService
 from app.services.event_bus import event_bus
 
@@ -42,6 +42,24 @@ async def list_candidates(
         data=[_serialize(c, current_user) for c in items],
         meta=PaginationMeta(page=page, total=total, limit=limit, last_page=last_page),
     )
+
+
+@router.post("", status_code=status.HTTP_201_CREATED)
+async def create_candidate(
+    body: CreateCandidateRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role(Role.ADMIN)),
+) -> CandidateAdminResponse:
+    try:
+        candidate = await CandidateService.create(db, body.model_dump())
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"errors": {"email": str(e)}},
+        )
+    await event_bus.publish("candidate_updated", {"candidate_id": candidate.id})
+    await event_bus.publish("stats_updated", {})
+    return CandidateAdminResponse.model_validate(candidate)
 
 
 @router.get("/summary")
@@ -156,6 +174,24 @@ async def update_candidate(
         candidate = await CandidateService.update(
             db, id, status=body.status, internal_notes=body.internal_notes,
         )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"errors": {"id": str(e)}},
+        )
+    await event_bus.publish("candidate_updated", {"candidate_id": id})
+    await event_bus.publish("stats_updated", {})
+    return CandidateAdminResponse.model_validate(candidate)
+
+
+@router.delete("/{id}")
+async def delete_candidate(
+    id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role(Role.ADMIN)),
+) -> CandidateAdminResponse:
+    try:
+        candidate = await CandidateService.soft_delete(db, id)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

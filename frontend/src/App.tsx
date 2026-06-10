@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from "react"
+import { Link } from "react-router-dom"
 import { Toaster } from "sonner"
 import { useAuthContext } from "@/context/AuthContext"
 import { useLogout } from "@/hooks/useAuth"
@@ -113,6 +114,17 @@ function App() {
             <option value={50}>50 / page</option>
           </select>
         </div>
+
+        {user?.role === "admin" && (
+          <div className="flex justify-end">
+            <Link to="/candidates/new" className="btn btn-primary">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              New Candidate
+            </Link>
+          </div>
+        )}
 
         <CandidatesTable
           candidates={candidates}

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 
 
 class CandidateResponse(BaseModel):
@@ -42,6 +42,14 @@ class SummaryResponse(BaseModel):
     reviewer_id: int
     summary: str
     generated_at: datetime
+
+
+class CreateCandidateRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    email: EmailStr
+    role_applied: str = Field(..., min_length=1, max_length=100)
+    skills: list[str] = Field(default_factory=list)
+    internal_notes: str | None = None
 
 
 class UpdateCandidateRequest(BaseModel):

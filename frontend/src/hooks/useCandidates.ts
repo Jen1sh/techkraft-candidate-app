@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { fetchCandidates, updateCandidate, getCandidateReviews, fetchCandidateStats } from "@/api/candidate"
+import { fetchCandidates, updateCandidate, getCandidateReviews, fetchCandidateStats, createCandidate, deleteCandidate } from "@/api/candidate"
 import type { CandidateFilters, UpdateCandidateRequest } from "@/interfaces/api/candidate"
 
 interface UseCandidatesOptions extends Omit<CandidateFilters, "offset" | "limit"> {
@@ -48,5 +48,32 @@ export function useCandidateStats() {
   return useQuery({
     queryKey: ["candidates-stats"],
     queryFn: fetchCandidateStats,
+  })
+}
+
+export function useCreateCandidate() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (body: import("@/interfaces/api/candidate").CreateCandidateRequest) =>
+      createCandidate(body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["candidates"] })
+      queryClient.invalidateQueries({ queryKey: ["candidates-stats"] })
+      toast.success("Candidate created")
+    },
+  })
+}
+
+export function useDeleteCandidate() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: number) => deleteCandidate(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["candidates"] })
+      queryClient.invalidateQueries({ queryKey: ["candidates-stats"] })
+      toast.success("Candidate deleted")
+    },
   })
 }

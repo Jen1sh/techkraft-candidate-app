@@ -48,6 +48,14 @@ export interface CandidateDetailResponse extends CandidateResponse {
   reviews: Review[]
 }
 
+export interface CreateCandidateRequest {
+  name: string
+  email: string
+  role_applied: string
+  skills?: string[]
+  internal_notes?: string | null
+}
+
 export interface CandidateStatsResponse {
   total: number
   new: number
