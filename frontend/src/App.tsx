@@ -3,10 +3,12 @@ import { Toaster } from "sonner"
 import { useAuthContext } from "@/context/AuthContext"
 import { useLogout } from "@/hooks/useAuth"
 import { useCandidates } from "@/hooks/useCandidates"
+import { useEventStream } from "@/hooks/useEventStream"
 import CandidatesStats from "@/components/candidates/CandidatesStats"
 import CandidatesTable from "@/components/candidates/CandidatesTable"
 
 function App() {
+  useEventStream()
   const { user } = useAuthContext()
   const logout = useLogout()
 

@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.routers.auth import router as auth_router
 from app.api.routers.candidates import router as candidate_router
+from app.api.routers.events import router as events_router
 from app.db.base import Base
 from app.db.seed import seed_candidates, seed_scores, seed_users
 from app.db.session import async_session, engine, get_db
@@ -82,6 +83,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 app.include_router(auth_router, prefix="/api")
 app.include_router(candidate_router, prefix="/api")
+app.include_router(events_router, prefix="/api")
 
 
 @app.get("/api/health")

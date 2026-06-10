@@ -7,6 +7,7 @@ from app.api.deps import get_current_user, get_db, require_role
 from app.db.models.user import Role, User
 from app.schemas.candidate import AddScoresRequest, CandidateAdminResponse, CandidateResponse, CandidateReviewsResponse, CandidatesSummaryResponse, CategoryScore, MyScoreResponse, PaginatedCandidatesResponse, PaginationMeta, SummaryResponse, UpdateCandidateRequest
 from app.services.candidate_service import CandidateService
+from app.services.event_bus import event_bus
 
 router = APIRouter(prefix="/candidates", tags=["Candidates"])
 
@@ -100,6 +101,8 @@ async def add_my_scores(
         db, id, current_user.id,
         [c.model_dump() for c in body.categories],
     )
+    await event_bus.publish("reviews_updated", {"candidate_id": id})
+    await event_bus.publish("stats_updated", {})
     return MyScoreResponse(
         candidate_id=id,
         reviewer_id=current_user.id,
@@ -142,6 +145,8 @@ async def update_candidate(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"errors": {"id": str(e)}},
         )
+    await event_bus.publish("candidate_updated", {"candidate_id": id})
+    await event_bus.publish("stats_updated", {})
     return CandidateAdminResponse.model_validate(candidate)
 
 
