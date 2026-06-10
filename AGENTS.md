@@ -5,7 +5,7 @@ Monorepo: `backend/` (Python 3.12 + FastAPI) + `frontend/` (React + Vite + Tailw
 ## Backend
 
 - **Python venv:** `backend/.venv/` — activate with `source backend/.venv/bin/activate`.
-- **No pyproject.toml or requirements.txt.** Install deps with `pip install <pkg>`.
+- **Install deps:** `pip install -r requirements.txt` after activating venv.
 - **Run:** `uvicorn app.main:app --reload --port 8000` from `backend/`.
 - **Port:** 8000. All endpoints under `/api/`.
 
