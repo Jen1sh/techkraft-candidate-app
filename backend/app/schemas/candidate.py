@@ -64,6 +64,14 @@ class CandidateReviewsResponse(CandidateAdminResponse):
     reviews: list[Review]
 
 
+class CandidatesSummaryResponse(BaseModel):
+    total: int
+    new: int
+    reviewed: int
+    hired: int
+    rejected: int
+
+
 class PaginationMeta(BaseModel):
     page: int
     total: int

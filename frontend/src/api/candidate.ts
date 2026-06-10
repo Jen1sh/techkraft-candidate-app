@@ -1,6 +1,6 @@
 import { apiClient } from "@/api/client"
 import { ENDPOINTS } from "@/constants/endpoints"
-import type { CandidateListResponse, CandidateFilters, CandidateResponse, SummaryResponse } from "@/interfaces/api/candidate"
+import type { CandidateListResponse, CandidateFilters, CandidateResponse, SummaryResponse, UpdateCandidateRequest, CandidateReviewsResponse, CandidateStatsResponse } from "@/interfaces/api/candidate"
 
 export async function fetchCandidates(filters: CandidateFilters = {}): Promise<CandidateListResponse> {
   const params: Record<string, string | number> = {}
@@ -22,5 +22,20 @@ export async function getCandidate(id: number): Promise<CandidateResponse> {
 
 export async function generateSummary(id: number): Promise<SummaryResponse> {
   const { data } = await apiClient.post<SummaryResponse>(ENDPOINTS.summary(id))
+  return data
+}
+
+export async function updateCandidate(id: number, body: UpdateCandidateRequest): Promise<CandidateResponse> {
+  const { data } = await apiClient.patch<CandidateResponse>(ENDPOINTS.candidate(id), body)
+  return data
+}
+
+export async function getCandidateReviews(id: number): Promise<CandidateReviewsResponse> {
+  const { data } = await apiClient.get<CandidateReviewsResponse>(ENDPOINTS.reviews(id))
+  return data
+}
+
+export async function fetchCandidateStats(): Promise<CandidateStatsResponse> {
+  const { data } = await apiClient.get<CandidateStatsResponse>(ENDPOINTS.candidatesSummary)
   return data
 }

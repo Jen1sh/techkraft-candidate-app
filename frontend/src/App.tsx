@@ -11,7 +11,9 @@ function App() {
   const logout = useLogout()
 
   const [statusFilter, setStatusFilter] = useState("")
+  const [skillFilter, setSkillFilter] = useState("")
   const [keywordFilter, setKeywordFilter] = useState("")
+  const [limit, setLimit] = useState(20)
 
   const {
     data,
@@ -22,16 +24,15 @@ function App() {
     isFetchingNextPage,
   } = useCandidates({
     status: statusFilter || undefined,
+    skill: skillFilter || undefined,
     keyword: keywordFilter || undefined,
-    limit: 20,
+    limit,
   })
 
   const candidates = useMemo(
     () => data?.pages.flatMap((p) => p.data) ?? [],
     [data],
   )
-
-  const total = data?.pages[0]?.meta.total
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setKeywordFilter(e.target.value)
@@ -64,11 +65,11 @@ function App() {
       </div>
 
       <main className="p-8 max-w-7xl mx-auto space-y-6">
-        <CandidatesStats total={total} />
+        <CandidatesStats />
 
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
           <select
-            className="select select-bordered w-full sm:w-44"
+            className="select select-bordered w-full sm:w-40"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
@@ -78,6 +79,16 @@ function App() {
             <option value="hired">Hired</option>
             <option value="rejected">Rejected</option>
           </select>
+          <label className="input w-full sm:max-w-44">
+            <span className="text-xs opacity-50">#</span>
+            <input
+              type="text"
+              className="grow"
+              placeholder="Skill…"
+              value={skillFilter}
+              onChange={(e) => setSkillFilter(e.target.value)}
+            />
+          </label>
           <label className="input w-full sm:max-w-xs">
             <svg className="h-4 w-4 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
@@ -90,6 +101,15 @@ function App() {
               onChange={handleSearchChange}
             />
           </label>
+          <select
+            className="select select-bordered w-full sm:w-32"
+            value={limit}
+            onChange={(e) => setLimit(Number(e.target.value))}
+          >
+            <option value={10}>10 / page</option>
+            <option value={20}>20 / page</option>
+            <option value={50}>50 / page</option>
+          </select>
         </div>
 
         <CandidatesTable

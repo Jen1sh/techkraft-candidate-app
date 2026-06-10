@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db, require_role
 from app.db.models.user import Role, User
-from app.schemas.candidate import AddScoresRequest, CandidateAdminResponse, CandidateResponse, CandidateReviewsResponse, CategoryScore, MyScoreResponse, PaginatedCandidatesResponse, PaginationMeta, SummaryResponse, UpdateCandidateRequest
+from app.schemas.candidate import AddScoresRequest, CandidateAdminResponse, CandidateResponse, CandidateReviewsResponse, CandidatesSummaryResponse, CategoryScore, MyScoreResponse, PaginatedCandidatesResponse, PaginationMeta, SummaryResponse, UpdateCandidateRequest
 from app.services.candidate_service import CandidateService
 
 router = APIRouter(prefix="/candidates", tags=["Candidates"])
@@ -41,6 +41,15 @@ async def list_candidates(
         data=[_serialize(c, current_user) for c in items],
         meta=PaginationMeta(page=page, total=total, limit=limit, last_page=last_page),
     )
+
+
+@router.get("/summary")
+async def candidates_summary(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> CandidatesSummaryResponse:
+    data = await CandidateService.get_summary(db)
+    return CandidatesSummaryResponse(**data)
 
 
 @router.get("/{candidate_id}")

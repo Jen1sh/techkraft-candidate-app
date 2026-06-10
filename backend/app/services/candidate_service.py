@@ -123,6 +123,20 @@ class CandidateService:
         return candidate
 
     @staticmethod
+    async def get_summary(db: AsyncSession) -> dict:
+        result = await db.execute(
+            select(Candidate.status, func.count()).group_by(Candidate.status)
+        )
+        counts = {row[0]: row[1] for row in result.all()}
+        return {
+            "total": sum(counts.values()),
+            "new": counts.get(CandidateStatus.NEW.value, 0),
+            "reviewed": counts.get(CandidateStatus.REVIEWED.value, 0),
+            "hired": counts.get(CandidateStatus.HIRED.value, 0),
+            "rejected": counts.get(CandidateStatus.REJECTED.value, 0),
+        }
+
+    @staticmethod
     async def get_reviews(
         db: AsyncSession, candidate_id: int
     ) -> list[dict]:
