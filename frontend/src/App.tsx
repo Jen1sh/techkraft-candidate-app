@@ -1,10 +1,27 @@
+import { useState, useCallback } from "react"
 import { Toaster } from "sonner"
 import { useAuthContext } from "@/context/AuthContext"
 import { useLogout } from "@/hooks/useAuth"
+import { useCandidates } from "@/hooks/useCandidates"
+import CandidatesStats from "@/components/candidates/CandidatesStats"
+import CandidatesTable from "@/components/candidates/CandidatesTable"
 
 function App() {
   const { user } = useAuthContext()
   const logout = useLogout()
+
+  const [statusFilter, setStatusFilter] = useState("")
+  const [keywordFilter, setKeywordFilter] = useState("")
+
+  const { data, isLoading, isError } = useCandidates({
+    status: statusFilter || undefined,
+    keyword: keywordFilter || undefined,
+    limit: 50,
+  })
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setKeywordFilter(e.target.value)
+  }, [])
 
   return (
     <>
@@ -32,67 +49,41 @@ function App() {
         </div>
       </div>
 
-      <div className="hero bg-base-100 min-h-[60vh]">
-        <div className="hero-content text-center">
-          <div className="max-w-md">
-            <h1 className="text-5xl font-bold">Candidate Score</h1>
-            <p className="py-6">
-              Evaluate, track, and manage candidate scores with ease.
-            </p>
-            <button className="btn btn-primary">Get Started</button>
-          </div>
-        </div>
-      </div>
+      <main className="p-8 max-w-7xl mx-auto space-y-6">
+        <CandidatesStats />
 
-      <main className="p-8 max-w-6xl mx-auto">
-        <div className="stats shadow w-full">
-          <div className="stat">
-            <div className="stat-title">Total Candidates</div>
-            <div className="stat-value">15</div>
-          </div>
-          <div className="stat">
-            <div className="stat-title">Reviewed</div>
-            <div className="stat-value">8</div>
-          </div>
-          <div className="stat">
-            <div className="stat-title">Hired</div>
-            <div className="stat-value">3</div>
-            <div className="stat-desc">20% hire rate</div>
-          </div>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <select
+            className="select select-bordered w-full sm:w-44"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="">All statuses</option>
+            <option value="new">New</option>
+            <option value="reviewed">Reviewed</option>
+            <option value="hired">Hired</option>
+            <option value="rejected">Rejected</option>
+          </select>
+          <label className="input w-full sm:max-w-xs">
+            <svg className="h-4 w-4 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+            <input
+              type="text"
+              className="grow"
+              placeholder="Search name or email…"
+              value={keywordFilter}
+              onChange={handleSearchChange}
+            />
+          </label>
         </div>
 
-        <div className="overflow-x-auto mt-8">
-          <table className="table table-zebra">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Skills</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Alice Johnson</td>
-                <td>Software Engineer</td>
-                <td><span className="badge badge-ghost">New</span></td>
-                <td>Python, FastAPI, SQL</td>
-              </tr>
-              <tr>
-                <td>Bob Smith</td>
-                <td>Frontend Developer</td>
-                <td><span className="badge badge-info">Reviewed</span></td>
-                <td>React, TypeScript, CSS</td>
-              </tr>
-              <tr>
-                <td>Carol Williams</td>
-                <td>Data Scientist</td>
-                <td><span className="badge badge-success">Hired</span></td>
-                <td>Python, ML, SQL</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <CandidatesTable
+          candidates={data?.data ?? []}
+          isLoading={isLoading}
+          isError={isError}
+          role={user?.role ?? null}
+        />
       </main>
 
       <footer className="footer sm:footer-horizontal bg-base-200 text-base-content p-8 mt-8">

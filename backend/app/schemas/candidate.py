@@ -21,6 +21,22 @@ class CandidateAdminResponse(CandidateResponse):
     internal_notes: str | None = None
 
 
+class CategoryScore(BaseModel):
+    category: str
+    score: int
+    note: str | None = None
+
+
+class MyScoreResponse(BaseModel):
+    candidate_id: int
+    reviewer_id: int
+    categories: list[CategoryScore]
+
+
+class AddScoresRequest(BaseModel):
+    categories: list[CategoryScore]
+
+
 class PaginationMeta(BaseModel):
     page: int
     total: int

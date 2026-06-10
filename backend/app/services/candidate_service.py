@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import math
 
 from sqlalchemy import String, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models.candidate import Candidate
+from app.db.models.score import Score
 
 
 class CandidateService:
@@ -46,3 +49,51 @@ class CandidateService:
     async def get_by_id(db: AsyncSession, candidate_id: int) -> Candidate | None:
         result = await db.execute(select(Candidate).where(Candidate.id == candidate_id))
         return result.scalar_one_or_none()
+
+    @staticmethod
+    async def get_my_scores(
+        db: AsyncSession, candidate_id: int, reviewer_id: int
+    ) -> list[Score]:
+        result = await db.execute(
+            select(Score).where(
+                Score.candidate_id == candidate_id,
+                Score.reviewer_id == reviewer_id,
+            )
+        )
+        return list(result.scalars().all())
+
+    @staticmethod
+    async def add_scores(
+        db: AsyncSession,
+        candidate_id: int,
+        reviewer_id: int,
+        categories: list[dict],
+    ) -> list[Score]:
+        scores = []
+        for cat in categories:
+            result = await db.execute(
+                select(Score).where(
+                    Score.candidate_id == candidate_id,
+                    Score.reviewer_id == reviewer_id,
+                    Score.category == cat["category"],
+                )
+            )
+            existing = result.scalar_one_or_none()
+            if existing:
+                existing.score = cat["score"]
+                existing.note = cat.get("note")
+                scores.append(existing)
+            else:
+                score = Score(
+                    candidate_id=candidate_id,
+                    reviewer_id=reviewer_id,
+                    category=cat["category"],
+                    score=cat["score"],
+                    note=cat.get("note"),
+                )
+                db.add(score)
+                scores.append(score)
+        await db.commit()
+        for s in scores:
+            await db.refresh(s)
+        return scores
