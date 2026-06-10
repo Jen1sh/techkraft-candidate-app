@@ -44,6 +44,10 @@ export interface CandidateReviewsResponse extends CandidateResponse {
   reviews: Review[]
 }
 
+export interface CandidateDetailResponse extends CandidateResponse {
+  reviews: Review[]
+}
+
 export interface CandidateStatsResponse {
   total: number
   new: number

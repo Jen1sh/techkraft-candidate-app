@@ -8,6 +8,7 @@ import App from "./App.tsx";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import ScorePage from "@/pages/ScorePage";
+import CandidateDetailPage from "@/pages/CandidateDetailPage";
 import "./index.css";
 import { Toaster } from "sonner";
 
@@ -23,6 +24,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/register" element={<RegisterPage />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/" element={<App />} />
+              <Route path="/candidates/:candidateId" element={<CandidateDetailPage />} />
               <Route path="/candidates/:candidateId/scores" element={<ScorePage />} />
             </Route>
           </Routes>

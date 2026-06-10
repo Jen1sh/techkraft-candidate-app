@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db, require_role
 from app.db.models.user import Role, User
-from app.schemas.candidate import AddScoresRequest, CandidateAdminResponse, CandidateResponse, CandidateReviewsResponse, CandidatesSummaryResponse, CategoryScore, MyScoreResponse, PaginatedCandidatesResponse, PaginationMeta, SummaryResponse, UpdateCandidateRequest
+from app.schemas.candidate import AddScoresRequest, CandidateAdminResponse, CandidateDetailAdminResponse, CandidateDetailResponse, CandidateResponse, CandidateReviewsResponse, CandidatesSummaryResponse, CategoryScore, MyScoreResponse, PaginatedCandidatesResponse, PaginationMeta, SummaryResponse, UpdateCandidateRequest
 from app.services.candidate_service import CandidateService
 from app.services.event_bus import event_bus
 
@@ -53,19 +53,35 @@ async def candidates_summary(
     return CandidatesSummaryResponse(**data)
 
 
-@router.get("/{candidate_id}")
+@router.get("/{id}")
 async def get_candidate(
-    candidate_id: int,
+    id: int,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> CandidateResponse | CandidateAdminResponse:
-    candidate = await CandidateService.get_by_id(db, candidate_id)
+) -> CandidateDetailResponse | CandidateDetailAdminResponse:
+    candidate = await CandidateService.get_by_id(db, id)
     if candidate is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"errors": {"id": "Candidate not found"}},
         )
-    return _serialize(candidate, current_user)
+    if current_user.role == Role.ADMIN:
+        reviews = await CandidateService.get_reviews(db, id)
+        return CandidateDetailAdminResponse(
+            **CandidateAdminResponse.model_validate(candidate).model_dump(),
+            reviews=reviews,
+        )
+    scores = await CandidateService.get_my_scores(db, id, current_user.id)
+    my_reviews = [
+        {
+            "reviewer": {"id": current_user.id, "name": current_user.name, "email": current_user.email},
+            "categories": [{"category": s.category, "score": s.score, "note": s.note} for s in scores],
+        }
+    ] if scores else []
+    return CandidateDetailResponse(
+        **CandidateResponse.model_validate(candidate).model_dump(),
+        reviews=my_reviews,
+    )
 
 
 @router.get("/{id}/scores")

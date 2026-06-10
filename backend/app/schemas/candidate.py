@@ -64,6 +64,14 @@ class CandidateReviewsResponse(CandidateAdminResponse):
     reviews: list[Review]
 
 
+class CandidateDetailResponse(CandidateResponse):
+    reviews: list[Review]
+
+
+class CandidateDetailAdminResponse(CandidateDetailResponse):
+    internal_notes: str | None = None
+
+
 class CandidatesSummaryResponse(BaseModel):
     total: int
     new: int
