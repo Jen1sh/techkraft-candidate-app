@@ -3,5 +3,6 @@ export const ENDPOINTS = {
   register: "auth/register",
   candidates: "candidates",
   candidate: (id: number) => `candidates/${id}`,
-  myScores: (candidateId: number) => `candidates/${candidateId}/my-scores`,
-}
+  myScores: (id: number) => `candidates/${id}/scores`,
+  summary: (id: number) => `candidates/${id}/summary`,
+};

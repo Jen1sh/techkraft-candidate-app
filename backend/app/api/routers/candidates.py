@@ -3,9 +3,9 @@ import math
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_db
+from app.api.deps import get_current_user, get_db, require_role
 from app.db.models.user import Role, User
-from app.schemas.candidate import AddScoresRequest, CandidateAdminResponse, CandidateResponse, CategoryScore, MyScoreResponse, PaginatedCandidatesResponse, PaginationMeta
+from app.schemas.candidate import AddScoresRequest, CandidateAdminResponse, CandidateResponse, CandidateReviewsResponse, CategoryScore, MyScoreResponse, PaginatedCandidatesResponse, PaginationMeta, SummaryResponse, UpdateCandidateRequest
 from app.services.candidate_service import CandidateService
 
 router = APIRouter(prefix="/candidates", tags=["Candidates"])
@@ -58,41 +58,101 @@ async def get_candidate(
     return _serialize(candidate, current_user)
 
 
-@router.get("/{candidate_id}/my-scores")
+@router.get("/{id}/scores")
 async def get_my_scores(
-    candidate_id: int,
+    id: int,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> MyScoreResponse | None:
-    scores = await CandidateService.get_my_scores(db, candidate_id, current_user.id)
+    scores = await CandidateService.get_my_scores(db, id, current_user.id)
     if not scores:
         return None
     return MyScoreResponse(
-        candidate_id=candidate_id,
+        candidate_id=id,
         reviewer_id=current_user.id,
         categories=[CategoryScore(category=s.category, score=s.score, note=s.note) for s in scores],
     )
 
 
-@router.post("/{candidate_id}/my-scores", status_code=status.HTTP_201_CREATED)
+@router.post("/{id}/scores", status_code=status.HTTP_201_CREATED)
 async def add_my_scores(
-    candidate_id: int,
+    id: int,
     body: AddScoresRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> MyScoreResponse:
-    candidate = await CandidateService.get_by_id(db, candidate_id)
+    candidate = await CandidateService.get_by_id(db, id)
     if candidate is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"errors": {"id": "Candidate not found"}},
         )
     scores = await CandidateService.add_scores(
-        db, candidate_id, current_user.id,
+        db, id, current_user.id,
         [c.model_dump() for c in body.categories],
     )
     return MyScoreResponse(
-        candidate_id=candidate_id,
+        candidate_id=id,
         reviewer_id=current_user.id,
         categories=[CategoryScore(category=s.category, score=s.score, note=s.note) for s in scores],
     )
+
+
+@router.get("/{id}/reviews")
+async def get_candidate_reviews(
+    id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role(Role.ADMIN)),
+) -> CandidateReviewsResponse:
+    candidate = await CandidateService.get_by_id(db, id)
+    if candidate is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"errors": {"id": "Candidate not found"}},
+        )
+    reviews = await CandidateService.get_reviews(db, id)
+    return CandidateReviewsResponse(
+        **CandidateAdminResponse.model_validate(candidate).model_dump(),
+        reviews=reviews,
+    )
+
+
+@router.patch("/{id}")
+async def update_candidate(
+    id: int,
+    body: UpdateCandidateRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role(Role.ADMIN)),
+) -> CandidateAdminResponse:
+    try:
+        candidate = await CandidateService.update(
+            db, id, status=body.status, internal_notes=body.internal_notes,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"errors": {"id": str(e)}},
+        )
+    return CandidateAdminResponse.model_validate(candidate)
+
+
+@router.post("/{id}/summary")
+async def generate_summary(
+    id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> SummaryResponse:
+    candidate = await CandidateService.get_by_id(db, id)
+    if candidate is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"errors": {"id": "Candidate not found"}},
+        )
+    try:
+        result = await CandidateService.generate_summary(db, id, current_user.id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"errors": {"scores": str(e)}},
+        )
+    return SummaryResponse(**result)

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react"
+import { useState, useCallback, useMemo } from "react"
 import { Toaster } from "sonner"
 import { useAuthContext } from "@/context/AuthContext"
 import { useLogout } from "@/hooks/useAuth"
@@ -13,11 +13,25 @@ function App() {
   const [statusFilter, setStatusFilter] = useState("")
   const [keywordFilter, setKeywordFilter] = useState("")
 
-  const { data, isLoading, isError } = useCandidates({
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useCandidates({
     status: statusFilter || undefined,
     keyword: keywordFilter || undefined,
-    limit: 50,
+    limit: 20,
   })
+
+  const candidates = useMemo(
+    () => data?.pages.flatMap((p) => p.data) ?? [],
+    [data],
+  )
+
+  const total = data?.pages[0]?.meta.total
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setKeywordFilter(e.target.value)
@@ -35,7 +49,7 @@ function App() {
           <div className="dropdown dropdown-end">
             <div tabIndex={0} role="button" className="btn btn-ghost flex items-center gap-2">
               <div className="avatar placeholder">
-                <div className="w-8 rounded-full bg-primary text-primary-content text-sm font-semibold">
+                <div className="w-8 rounded-full bg-primary text-primary-content text-sm font-semibold flex items-center justify-center">
                   <span>{user?.name?.charAt(0).toUpperCase()}</span>
                 </div>
               </div>
@@ -50,7 +64,7 @@ function App() {
       </div>
 
       <main className="p-8 max-w-7xl mx-auto space-y-6">
-        <CandidatesStats />
+        <CandidatesStats total={total} />
 
         <div className="flex flex-col sm:flex-row gap-4">
           <select
@@ -79,10 +93,13 @@ function App() {
         </div>
 
         <CandidatesTable
-          candidates={data?.data ?? []}
+          candidates={candidates}
           isLoading={isLoading}
           isError={isError}
           role={user?.role ?? null}
+          fetchNextPage={fetchNextPage}
+          hasNextPage={hasNextPage}
+          isFetchingNextPage={isFetchingNextPage}
         />
       </main>
 

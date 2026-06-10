@@ -37,6 +37,33 @@ class AddScoresRequest(BaseModel):
     categories: list[CategoryScore]
 
 
+class SummaryResponse(BaseModel):
+    candidate_id: int
+    reviewer_id: int
+    summary: str
+    generated_at: datetime
+
+
+class UpdateCandidateRequest(BaseModel):
+    status: str | None = None
+    internal_notes: str | None = None
+
+
+class ReviewerInfo(BaseModel):
+    id: int
+    name: str
+    email: str
+
+
+class Review(BaseModel):
+    reviewer: ReviewerInfo
+    categories: list[CategoryScore]
+
+
+class CandidateReviewsResponse(CandidateAdminResponse):
+    reviews: list[Review]
+
+
 class PaginationMeta(BaseModel):
     page: int
     total: int

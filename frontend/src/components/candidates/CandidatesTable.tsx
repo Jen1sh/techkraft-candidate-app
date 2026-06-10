@@ -1,5 +1,7 @@
+import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import type { CandidateResponse } from "@/interfaces/api/candidate"
+import SummaryModal from "./SummaryModal"
 
 const statusColor: Record<string, string> = {
   new: "badge-ghost",
@@ -21,9 +23,25 @@ interface Props {
   isLoading: boolean
   isError: boolean
   role: string | null
+  fetchNextPage: () => void
+  hasNextPage: boolean
+  isFetchingNextPage: boolean
 }
 
-export default function CandidatesTable({ candidates, isLoading, isError, role }: Props) {
+export default function CandidatesTable({
+  candidates,
+  isLoading,
+  isError,
+  role,
+  fetchNextPage,
+  hasNextPage,
+  isFetchingNextPage,
+}: Props) {
+  const navigate = useNavigate()
+  const [summaryCandidateId, setSummaryCandidateId] = useState<number | null>(null)
+  const isAdmin = role === "admin"
+  const isReviewer = role === "reviewer"
+
   if (isLoading) {
     return (
       <div className="overflow-x-auto mt-8">
@@ -69,10 +87,6 @@ export default function CandidatesTable({ candidates, isLoading, isError, role }
       </div>
     )
   }
-
-  const navigate = useNavigate()
-  const isAdmin = role === "admin"
-  const isReviewer = role === "reviewer"
 
   return (
     <div className="overflow-x-auto mt-8">
@@ -134,7 +148,7 @@ export default function CandidatesTable({ candidates, isLoading, isError, role }
                     </div>
                   )}
                   <div className="tooltip tooltip-top" data-tip="View AI summary">
-                    <button className="btn btn-ghost btn-xs btn-square">
+                    <button className="btn btn-ghost btn-xs btn-square" onClick={() => setSummaryCandidateId(c.id)}>
                       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
                       </svg>
@@ -146,6 +160,29 @@ export default function CandidatesTable({ candidates, isLoading, isError, role }
           ))}
         </tbody>
       </table>
+
+      {hasNextPage && (
+        <div className="flex justify-center mt-6">
+          <button
+            className="btn btn-outline btn-wide"
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+          >
+            {isFetchingNextPage ? (
+              <span className="loading loading-spinner" />
+            ) : null}
+            {isFetchingNextPage ? "Loading more…" : "Load more"}
+          </button>
+        </div>
+      )}
+
+      {summaryCandidateId !== null && (
+        <SummaryModal
+          candidateId={summaryCandidateId}
+          isOpen={summaryCandidateId !== null}
+          onClose={() => setSummaryCandidateId(null)}
+        />
+      )}
     </div>
   )
 }

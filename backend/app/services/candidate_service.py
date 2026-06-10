@@ -1,12 +1,18 @@
 from __future__ import annotations
 
+import asyncio
 import math
+from datetime import datetime, timezone
 
 from sqlalchemy import String, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models.candidate import Candidate
+from sqlalchemy.orm import joinedload
+
+from app.db.models.candidate import Candidate, CandidateStatus
 from app.db.models.score import Score
+from app.db.models.user import User
+from app.services.summary_templates import generate_random_summary
 
 
 class CandidateService:
@@ -97,3 +103,67 @@ class CandidateService:
         for s in scores:
             await db.refresh(s)
         return scores
+
+    @staticmethod
+    async def update(
+        db: AsyncSession,
+        candidate_id: int,
+        status: str | None = None,
+        internal_notes: str | None = None,
+    ) -> Candidate:
+        candidate = await CandidateService.get_by_id(db, candidate_id)
+        if candidate is None:
+            raise ValueError("Candidate not found")
+        if status is not None:
+            candidate.status = CandidateStatus(status)
+        if internal_notes is not None:
+            candidate.internal_notes = internal_notes
+        await db.commit()
+        await db.refresh(candidate)
+        return candidate
+
+    @staticmethod
+    async def get_reviews(
+        db: AsyncSession, candidate_id: int
+    ) -> list[dict]:
+        result = await db.execute(
+            select(Score, User)
+            .join(User, Score.reviewer_id == User.id)
+            .where(Score.candidate_id == candidate_id)
+            .order_by(User.id, Score.category)
+        )
+        rows = result.all()
+
+        reviews_map: dict[int, dict] = {}
+        for score, user in rows:
+            if user.id not in reviews_map:
+                reviews_map[user.id] = {
+                    "reviewer": {"id": user.id, "name": user.name, "email": user.email},
+                    "categories": [],
+                }
+            reviews_map[user.id]["categories"].append({
+                "category": score.category,
+                "score": score.score,
+                "note": score.note,
+            })
+
+        return list(reviews_map.values())
+
+    @staticmethod
+    async def generate_summary(
+        db: AsyncSession, candidate_id: int, reviewer_id: int
+    ) -> dict:
+        result = await db.execute(
+            select(Score).where(Score.candidate_id == candidate_id).limit(1)
+        )
+        if result.scalar_one_or_none() is None:
+            raise ValueError("This candidate has not been scored yet for the AI review")
+
+        await asyncio.sleep(2)
+
+        return {
+            "candidate_id": candidate_id,
+            "reviewer_id": reviewer_id,
+            "summary": generate_random_summary(),
+            "generated_at": datetime.now(timezone.utc),
+        }

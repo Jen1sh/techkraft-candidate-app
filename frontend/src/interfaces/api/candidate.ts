@@ -15,3 +15,10 @@ export interface CandidateFilters {
   skill?: string
   keyword?: string
 }
+
+export interface SummaryResponse {
+  candidate_id: number
+  reviewer_id: number
+  summary: string
+  generated_at: string
+}

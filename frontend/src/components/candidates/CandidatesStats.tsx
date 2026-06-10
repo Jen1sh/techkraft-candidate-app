@@ -1,9 +1,13 @@
-export default function CandidatesStats() {
+interface Props {
+  total?: number
+}
+
+export default function CandidatesStats({ total }: Props) {
   return (
     <div className="stats shadow w-full">
       <div className="stat">
         <div className="stat-title">Total Candidates</div>
-        <div className="stat-value">15</div>
+        <div className="stat-value">{total ?? "—"}</div>
       </div>
       <div className="stat">
         <div className="stat-title">Reviewed</div>
