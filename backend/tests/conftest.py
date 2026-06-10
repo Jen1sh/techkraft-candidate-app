@@ -3,7 +3,7 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "techcraft.db")
+DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "techkraft.db")
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -27,7 +27,7 @@ def client(_clean_db_session):
 def admin_token(client):
     r = client.post(
         "/api/auth/login",
-        json={"email": "admin@techcraft.com", "password": "password123"},
+        json={"email": "admin@techkraft.com", "password": "password123"},
     )
     return r.json()["access_token"]
 
@@ -36,6 +36,6 @@ def admin_token(client):
 def reviewer_token(client):
     r = client.post(
         "/api/auth/login",
-        json={"email": "reviewer@techcraft.com", "password": "password123"},
+        json={"email": "reviewer@techkraft.com", "password": "password123"},
     )
     return r.json()["access_token"]

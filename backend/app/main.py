@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     yield
 
 
-app = FastAPI(title="TechCraft Candidate Score API", lifespan=lifespan)
+app = FastAPI(title="TechKraft Candidate Score API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

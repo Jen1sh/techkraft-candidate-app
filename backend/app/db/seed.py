@@ -9,13 +9,13 @@ from app.db.models.user import Role, User
 SEED_USERS = [
     {
         "name": "Admin User",
-        "email": "admin@techcraft.com",
+        "email": "admin@techkraft.com",
         "password": "password123",
         "role": Role.ADMIN,
     },
     {
         "name": "Reviewer User",
-        "email": "reviewer@techcraft.com",
+        "email": "reviewer@techkraft.com",
         "password": "password123",
         "role": Role.REVIEWER,
     },
@@ -139,7 +139,7 @@ async def seed_candidates(db: AsyncSession) -> None:
 
 
 async def seed_scores(db: AsyncSession) -> None:
-    reviewer_result = await db.execute(select(User).where(User.email == "reviewer@techcraft.com"))
+    reviewer_result = await db.execute(select(User).where(User.email == "reviewer@techkraft.com"))
     reviewer = reviewer_result.scalar_one_or_none()
     if reviewer is None:
         return

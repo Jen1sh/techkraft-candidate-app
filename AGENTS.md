@@ -1,4 +1,4 @@
-# TechCraft Candidate Score — Agent Guide
+# Techkraft Candidate Score — Agent Guide
 
 Monorepo: `backend/` (Python 3.12 + FastAPI) + `frontend/` (React + Vite + Tailwind v4 + daisyUI v5).
 
@@ -11,7 +11,7 @@ Monorepo: `backend/` (Python 3.12 + FastAPI) + `frontend/` (React + Vite + Tailw
 
 ### Architecture
 
-`backend/app/` — async SQLAlchemy + SQLite (`techcraft.db` auto-created, auto-seeded on startup).
+`backend/app/` — async SQLAlchemy + SQLite (`techkraft.db` auto-created, auto-seeded on startup).
 | Layer | Path |
 |---|---|
 | Entrypoint | `main.py` — lifespan creates tables + seeds |
@@ -34,8 +34,8 @@ Monorepo: `backend/` (Python 3.12 + FastAPI) + `frontend/` (React + Vite + Tailw
 **Seed users (auto-created):**
 | Email | Password | Role |
 |---|---|---|
-| admin@techcraft.com | password123 | admin |
-| reviewer@techcraft.com | password123 | reviewer |
+| admin@techkraft.com | password123 | admin |
+| reviewer@techkraft.com | password123 | reviewer |
 
 ### Key deps (not obvious)
 
